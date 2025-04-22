@@ -1,0 +1,13 @@
+# Environment files
+.env
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]
+
+# VSCode or PyCharm config (optional)
+.vscode/
+.idea/
+
+# Streamlit-generated files (optional)
+.streamlit/

@@ -3,8 +3,8 @@ import json
 import concurrent.futures
 import os
 from git import GitCommandError
-from services.git_service import clone_repo, create_branch, update_file, commit_and_push, cleanup
-from services.github_service import create_pull_request, request_reviewer
+from services.clone_update_repo import clone_repo, create_branch, update_file, commit_and_push, cleanup
+from services.pull_request_review import create_pull_request, request_reviewer
 from utils.logger import get_logger
 from dotenv import load_dotenv
 load_dotenv()

@@ -38,6 +38,31 @@ def update_file(file_path: str, search_pattern: str, replace_with: str) -> bool:
     logger.info(f"Updated file {file_path}")
     return True
 
+def apply_multiple_changes(repo_path: str, changes: list) -> bool:
+    import re
+    changed = False
+
+    for change in changes:
+        file_path = os.path.join(repo_path, change['target_file'])
+        if not os.path.exists(file_path):
+            continue
+
+        with open(file_path, 'r') as f:
+            content = f.read()
+
+        if not re.search(change['search_pattern'], content, flags=re.MULTILINE):
+            continue
+
+        updated_content = re.sub(change['search_pattern'], change['replace_with'], content, flags=re.MULTILINE)
+
+        with open(file_path, 'w') as f:
+            f.write(updated_content)
+
+        logger.info(f"Updated file: {file_path}")
+        changed = True
+
+    return changed
+
 def commit_and_push(repo, branch_name: str, commit_message: str):
     repo.git.add(A=True)
     repo.index.commit(commit_message)

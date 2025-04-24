@@ -1,4 +1,3 @@
-# ✅ Cleaned and Fixed: app.py with correct process_plugin position
 import streamlit as st
 import json
 import concurrent.futures
@@ -42,7 +41,6 @@ reviewer = st.text_input("Reviewer Username/Email", value="")
 
 status_dashboard = {}
 
-# --- Define the update logic safely above Streamlit trigger ---
 def process_plugin(plugin_name, reviewer, changes):
     repo_url = repo_choices[plugin_name]
     try:
@@ -76,25 +74,48 @@ def process_plugin(plugin_name, reviewer, changes):
         if 'repo' in locals(): repo.close()
         if 'temp_dir' in locals(): cleanup(temp_dir)
 
+# Safe defaults for input fields
+for key in ["target_file_input", "search_pattern_input", "replace_with_input"]:
+    if key not in st.session_state:
+        st.session_state[key] = ""
+if "reset_form" not in st.session_state:
+    st.session_state["reset_form"] = False
+
+# Handle form reset before rendering widgets
+if st.session_state["reset_form"]:
+    st.session_state["target_file_input"] = ""
+    st.session_state["search_pattern_input"] = ""
+    st.session_state["replace_with_input"] = ""
+    st.session_state["reset_form"] = False
+
 # --- UI for changes ---
 st.subheader("Add Config Change")
+
 with st.form(key="change_form"):
     file_options = ["gradle.properties", "build.gradle", "Dockerfile", "custom"]
     file_choice = st.selectbox("Select File to Update", options=file_options)
+    
     if file_choice == "custom":
-        target_file = st.text_input("Enter custom file path (relative to repo root)")
+        target_file = st.text_input(
+            "Enter custom file path (relative to repo root)",
+            key="target_file_input"
+        )
     else:
         target_file = file_choice
-    search_pattern = st.text_input("Search Pattern (Regex)", value="")
-    replace_with = st.text_input("Replacement Text", value="")
+        st.session_state["target_file_input"] = target_file
+
+    st.text_input("Search Pattern (Regex)", key="search_pattern_input")
+    st.text_input("Replacement Text", key="replace_with_input")
+
     submit = st.form_submit_button("Add Change")
 
     if submit:
         change = {
-            "target_file": target_file,
-            "search_pattern": search_pattern,
-            "replace_with": replace_with
+            "target_file": st.session_state["target_file_input"],
+            "search_pattern": st.session_state["search_pattern_input"],
+            "replace_with": st.session_state["replace_with_input"]
         }
+
         if st.session_state["edit_idx"] is not None:
             st.session_state["changes"][st.session_state["edit_idx"]] = change
             st.session_state["edit_idx"] = None
@@ -104,17 +125,17 @@ with st.form(key="change_form"):
             st.session_state["changes"].append(change)
             st.success("Change added.")
             logger.info(f"Added change: {change}")
+
+        st.session_state["reset_form"] = True
         st.rerun()
+
 
 st.subheader("📋 Changes to Apply")
 for idx, change in enumerate(st.session_state.get("changes", [])):
-    col1, col2, col3 = st.columns([6, 1, 1])
+    col1, col2 = st.columns([6, 1])
     with col1:
         st.markdown(f"📄 `{change['target_file']}`: `{change['search_pattern']}` → `{change['replace_with']}`")
     with col2:
-        if st.button("✏️", key=f"edit_{idx}"):
-            st.session_state["edit_idx"] = idx
-    with col3:
         if st.button("🗑️", key=f"delete_{idx}"):
             st.session_state["changes"].pop(idx)
             st.rerun()
